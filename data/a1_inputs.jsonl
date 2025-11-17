@@ -1,3 +1,10 @@
+# a1_inputs.jsonl
+# This is the input file for SemEval Subtask A1 (Two-word Humor Generation).
+# Each line is one JSON object containing:
+#   - id: sample number
+#   - word1: first required word
+#   - word2: second required word
+# The system must generate a joke that uses BOTH words and stays under 40 words.
 {"id": 1, "word1": "avocado", "word2": "spaceship"}
 {"id": 2, "word1": "algorithm", "word2": "coffee"}
 {"id": 3, "word1": "unicorn", "word2": "deadline"}

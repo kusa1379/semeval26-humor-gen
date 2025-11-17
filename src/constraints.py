@@ -1,3 +1,14 @@
+"""
+constraints.py
+
+Utility functions to:
+- clean up text,
+- check if required words are present,
+- enforce word-length limits,
+- measure simple lexical overlap between headline and joke.
+
+These are used by the pipelines and evaluation script.
+"""
 import re
 from typing import Iterable
 

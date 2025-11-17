@@ -1,3 +1,10 @@
+# a2_inputs.jsonl
+# Input file for SemEval Subtask A2 (Headline-based Humor Generation).
+# Each line contains:
+#   - id: sample number
+#   - headline: a news headline
+# The system must generate a funny punchline related to the headline,
+# staying under 30 words.
 {"id": 1, "headline": "Scientists discover water on Mars again"}
 {"id": 2, "headline": "Tech company announces yet another messaging app"}
 {"id": 3, "headline": "Local man starts diet, ends it the same day"}

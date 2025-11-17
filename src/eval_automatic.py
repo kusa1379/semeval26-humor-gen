@@ -1,3 +1,20 @@
+
+"""
+eval_automatic.py
+
+Simple automatic evaluation script for our humor generators.
+
+We compute:
+- For A1:
+    * percentage of jokes that contain both required words
+    * percentage of jokes that respect the word limit
+- For A2:
+    * percentage of jokes that respect the word limit
+    * average lexical overlap with the headline (Jaccard)
+
+These numbers are NOT true "funny-ness" scores, but they are useful
+to show that our system respects the task constraints and stays on-topic.
+"""
 import json
 from pathlib import Path
 from statistics import mean

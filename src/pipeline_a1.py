@@ -1,3 +1,19 @@
+"""
+pipeline_a1.py
+
+End-to-end pipeline for Subtask A1 (two-word constrained jokes).
+
+Steps:
+1. Read inputs from data/a1_inputs.jsonl
+2. For each line, call the generator to produce a joke
+3. Check that the joke satisfies:
+     - contains both required words
+     - respects word limit
+   (we allow up to 5 attempts)
+4. Save the final joke in outputs/a1_generated.jsonl
+
+The script is written so it works both in Colab and on a local machine.
+"""
 import json
 from pathlib import Path
 from tqdm import tqdm

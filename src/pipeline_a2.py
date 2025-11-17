@@ -1,3 +1,16 @@
+"""
+pipeline_a2.py
+
+End-to-end pipeline for Subtask A2 (headline-based humorous comments).
+
+Steps:
+1. Read inputs from data/a2_inputs.jsonl
+2. For each headline, generate several candidate jokes
+3. Keep the candidate with:
+     - valid length
+     - highest lexical overlap with the headline (simple proxy for relevance)
+4. Save the chosen joke in outputs/a2_generated.jsonl
+"""
 import json
 from pathlib import Path
 from tqdm import tqdm
