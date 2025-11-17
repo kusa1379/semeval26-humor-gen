@@ -1,6 +1,8 @@
 
 SemEval-2026 Humor Generation — Subtasks A1 & A2
 
+Contributors: Kushal Sai Ravindra
+
 This repository contains the complete code and explanation for my final project on the SemEval-2026 Humor Generation Task.
 For this project, I focused on the two text-only subtasks for now:
 
@@ -14,15 +16,13 @@ Simple
 
 Understandable
 
-Easy for anyone (including my professor) to run
+Easy for anyone to run.
 
-Fully documented
-
-Based entirely on prompt engineering and API calls (no model training needed)
+Based entirely on prompt engineering and API calls.
 
 The entire system runs on a CPU and can be executed in Google Colab or on a personal laptop.
 
-1. What These Tasks Are (Explained Simply)
+1. What These Tasks Are:
    Subtask A1 — Joke with Two Words
 
 The input provides two words like:
