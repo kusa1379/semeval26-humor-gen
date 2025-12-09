@@ -1,227 +1,528 @@
 
-SemEval-2026 Humor Generation — Subtasks A1 & A2
-
+SemEval-2026 Humor Generation
+Subtasks A1, A2, B1, B2 (EN / ES / ZH + Multimodal GIF Humor)
 Contributors: Kushal Sai Ravindra
 
-This repository contains the complete code and explanation for my final project on the SemEval-2026 Humor Generation Task.
-For this project, I focused on the two text-only subtasks for now:
+1. Overview
 
-A1: Generate a short joke that must include two specific words
+This repository contains my complete implementation for the SemEval-2026 Humor Generation Task (Task 1). The shared task is about teaching AI systems to generate short, funny, and safe humorous texts under specific constraints.
 
-A2: Generate a short humorous comment based on a news headline
+The project covers all four subtasks:
 
-I designed this whole system to be:
+1. Task A1 (Text-only): Given two words, generate a joke that uses both.
 
-Simple
+2. Task A2 (Text-only): Given a news-like headline, generate a humorous reaction.
 
-Understandable
+3. Task B1 (Multimodal): Given a GIF URL, generate a humorous caption based only on the GIF.
 
-Easy for anyone to run.
+4. Task B2 (Multimodal): Given a GIF URL + text prompt, generate a humorous caption that relates to both.
 
-Based entirely on prompt engineering and API calls.
+Key design choices:
 
-The entire system runs on a CPU and can be executed in Google Colab or on a personal laptop.
+The system is prompt-engineering based, not model training based.
 
-1. What These Tasks Are:
-   Subtask A1 — Joke with Two Words
+It uses OpenAI GPT models via HTTP API (requests), not the openai Python SDK (to avoid dependency issues in Colab).
 
-The input provides two words like:
+Task A is multilingual: English (EN), Spanish (ES), and Chinese (ZH).
 
-"avocado", "spaceship"
+Tasks B1/B2 use a vision-capable model (GPT-4o) for GIF understanding.
 
+Everything is designed to run smoothly in Google Colab (CPU for Task A; API handles the heavy lifting).
 
-My system must generate a short joke (≤ 40 words) that includes both words clearly and in a natural, humorous way.
 
-This is tricky because:
+2. Project Structure
 
-humor is subjective
+   **data/ — Input Files for All Tasks**
 
-the model must respect both required words
+task-a-en-input.tsv / task-a-es-input.tsv / task-a-zh-input.tsv
 
-it still needs to sound natural and funny
+These files contain the official-style inputs for Task A in English, Spanish, and Chinese.
 
-In other words:
-Can the model connect two random ideas into a joke?
+Each file has two columns:
 
--Subtask A2 — Humor Based on a Headline
+id – unique identifier for each input instance.
 
-The input gives a real or fake news headline like:
+text – either:
 
-"Scientists discover water on Mars again"
+exactly two words → interpreted as an A1 instance (two-word joke), or
 
+a longer phrase/headline → interpreted as an A2 instance (headline humor).
 
-My system must write a funny comment (≤ 30 words) that reacts to the headline.
-So the goal here is:
+The pipeline automatically decides whether each row is A1 or A2 based on the number of tokens.
 
-understand the headline
+task-b1-input.tsv
 
-generate humor related to it
+Contains inputs for Task B1 (GIF-only humor).
 
-stay short
+Columns:
 
-remain safe and non-offensive
+id – unique identifier.
 
-This is similar to writing a one-liner for a late-night comedy show.
+url – URL of a GIF image that the model will use as visual context.
 
-2. How I Designed the System (Very Clear Explanation)
 
-I kept the entire pipeline modular and minimal so the structure is easy to understand.
-Here is the main idea:
+**src/ — Source Code**
+prompts.py — All Prompts in One Place
 
-1. Prompts (prompts.py)
+What it contains:
 
-This is the heart of the humor generation.
+System & user prompts for:
 
-I wrote two system prompts:
+A1 in EN/ES/ZH: jokes using two mandatory words.
 
-A1 → “You are a stand-up comedian. You must include both words. Keep it short.”
+A2 in EN/ES/ZH: humorous comments reacting to headlines.
 
-A2 → “You are a late-night show writer. Make a witty comment about the headline.”
+B1: visual-only GIF humor.
 
-Prompts also enforce:
+B2: GIF + text humor.
 
-word limits
+Why this file matters:
 
-humor tone
+Humor generation is heavily dependent on prompting.
 
-avoiding offensive content
+This file defines:
 
-2. Generation (generator_gpt.py)
+the “persona” of the model (stand-up comedian, late-night writer, etc.),
 
-This file sends requests to the OpenAI API.
+the constraints (word limit, safety rules, language of output),
 
-To avoid dependency issues in Colab, I didn’t use the openai Python package.
-Instead, I used the plain requests library.
+how strict the model must be about including certain words.
 
-Why?
+Example behaviors:
 
-Simple
+For A1 English, the system prompt says things like:
 
-No version clashes
+“You are a clever stand-up comedian.”
 
-Works in any environment
+“You must include BOTH required words.”
 
-This function builds the request → sends it → gets the model's output text.
+“Maximum 40 words.”
 
-3. Pipelines (pipeline_a1.py and pipeline_a2.py)
+“Avoid offensive or discriminatory content.”
 
-These pipelines do the actual work:
+For A1 Spanish/Chinese:
 
-For A1:
+Same idea, but explicitly asking for output in Spanish or Simplified Chinese, with constraints written in that language.
 
-Read the input words
+For B1/B2:
 
-Generate a joke
+The system prompt says:
 
-Check:
+“You are a witty comedian who writes short comments about GIFs.”
 
-Are both words present?
+“Use only what can be seen/inferred from the GIF (for B1), or from both GIF and text (for B2).”
 
-Is the joke under 40 words?
+“Keep it under 30 words.”
 
-If not, try again (up to 5 attempts)
+This file is the control center for the model’s behavior and style.
 
-Save the final joke in a JSONL file
+task-b2-input.tsv
 
-For A2:
 
-Read the headline
+**generator_gpt.py — Text-Only Joke Generator (Task A)**
 
-Generate multiple candidate jokes
+What it does:
 
-Check:
+Sends text-only prompts to the OpenAI Chat Completions API using the requests library.
 
-Is the joke ≤ 30 words?
+Used by Task A (A1 & A2) in English, Spanish, and Chinese.
 
-How related is the joke to the headline?
+Key functions:
 
-Pick the best candidate based on lexical overlap
+_call_gpt(system_prompt, user_prompt, model)
 
-Save it
+Low-level function:
 
-These pipelines guarantee that the outputs follow the task rules.
+builds the JSON payload,
 
-4. Evaluation (eval_automatic.py)
+sends a POST request,
 
-This part isn’t about “is the joke funny?” (LLMs can’t judge humor well).
-Instead, I check:
+parses the JSON response,
 
-A1:
+returns just the generated text.
 
-% of jokes that contain both required words
+generate_a1_joke(word1, word2)
 
-% of jokes within 40 words
+Uses the English A1 prompts from prompts.py.
 
-A2:
+Returns a joke that should include both word1 and word2.
 
-% of comments within 30 words
+generate_a2_joke(headline)
 
-How much the comment overlaps with the headline (simple relevance measure)
+Uses English A2 prompts.
 
-This is useful for verifying constraint satisfaction.
+generate_a1_joke_lang(lang, word1, word2)
 
+Uses language-specific prompts for lang in {en, es, zh}.
 
-Running in Google Colab (recommended)
+generate_a2_joke_lang(lang, headline)
 
-Clone the repo:
+A2 variant for multiple languages.
 
-!git clone https://github.com/kusa1379/semeval26-humor-gen.git
+Why it's written this way:
 
+Using requests instead of the openai SDK avoids:
 
-Install the dependencies:
+version conflicts,
 
-!pip install -r semeval26-humor-gen/requirements.txt
+proxy keyword errors,
 
+complex SDK updates in Colab.
 
-Set your API key:
+Separating text-only generation from vision simplifies debugging and makes the code easier to read.
 
-import os
-os.environ["OPENAI_API_KEY"] = "sk-..."
 
+**vision_generator.py — GIF Humor Generator (Tasks B1 & B2)**
 
-Run A1:
+What it does:
 
-%cd semeval26-humor-gen
-!python -m src.pipeline_a1
+Handles multimodal requests (text + GIF URL) using a vision-capable GPT-4o model.
 
+Key functions:
 
-Run A2:
+_call_gpt_vision(system_prompt, text_prompt, image_url)
 
-!python -m src.pipeline_a2
+Builds a messages payload where the user content includes:
 
+a text chunk (the instructions + optional prompt),
 
-Evaluate:
+an image_url object pointing to the GIF URL.
 
-!python -m src.eval_automatic
+Sends it to the API and returns the humorous text.
 
+generate_b1_joke(gif_url)
 
-Outputs appear in the outputs/ folder.
+Uses the B1 system prompt (GIF-only) and a fixed user text like:
 
-5. Example Results (Easy to Understand)
-A1 Example
+“Look at this GIF and write ONE short, funny comment about it.”
 
-Input:
+generate_b2_joke(gif_url, text_prompt)
 
-{"id": 1, "word1": "algorithm", "word2": "coffee"}
+Uses the B2 system prompt (GIF + text).
 
+Asks the model to jointly reason about both GIF and given text.
 
-Possible output:
+Why separated from generator_gpt.py:
 
-My morning coffee follows a strict algorithm: step one, drink; step two, pretend it helped.
+B1/B2 require a different message format (with image_url) and often a different model (gpt-4o).
 
+Keeping vision code separate makes it clearer what is text-only vs. multimodal.
 
-Uses both words + is short + is funny.
+**task_a_tsv_pipeline.py — Master Pipeline for Task A (EN/ES/ZH)**
 
-A2 Example
+What it does:
 
-Input:
+Reads the multilingual input files:
 
-{"id": 1, "headline": "Scientists discover water on Mars again"}
+task-a-en-input.tsv
 
+task-a-es-input.tsv
 
-Possible output:
+task-a-zh-input.tsv
 
-At this point, Mars finds water more consistently than my apartment building does.
+For each row:
 
+It checks how many tokens the text field has.
 
-Makes a joke while staying relevant.
+If exactly 2 tokens → treat as A1 (two-word joke).
+
+Otherwise → treat as A2 (headline humor).
+
+Calls the appropriate function:
+
+generate_a1_joke_lang(lang, word1, word2)
+
+or generate_a2_joke_lang(lang, headline)
+
+Cleans the output (removes any tabs that might break TSV format).
+
+Writes to:
+
+task-a-en.tsv
+
+task-a-es.tsv
+
+task-a-zh.tsv
+
+Why this file is important:
+
+Automates all of Task A across three languages in a single script.
+
+Ensures everything is output in the exact submission format with id and text.
+
+Centralizes the logic for A1 vs. A2 detection, so you don’t need separate scripts.
+
+
+**pipeline_b1.py — Pipeline for GIF-Only Humor (Task B1)**
+
+What it does:
+
+Reads data/task-b1-input.tsv:
+
+each item has id and url.
+
+For each row:
+
+calls generate_b1_joke(gif_url) from vision_generator.py.
+
+writes id and the generated humorous text into task-b1.tsv.
+
+Role in the project:
+
+This is the official pipeline that turns raw GIF inputs into submission-ready humor for B1.
+
+Keeps logic for B1 very clean and easy to test (just one TSV in, one TSV out).
+
+
+**pipeline_b2.py — Pipeline for GIF + Text Humor (Task B2)**
+
+What it does:
+
+Reads data/task-b2-input.tsv:
+
+columns: id, url, prompt.
+
+For each row:
+
+calls generate_b2_joke(gif_url, prompt) from vision_generator.py.
+
+writes id and text into task-b2.tsv.
+
+Why it’s separate from pipeline_b1.py:
+
+B2 combines two inputs (GIF and text) instead of just the GIF.
+
+Having a dedicated file keeps the code for each subtask simple and explicit.
+
+
+**eval_automatic.py — Simple Automatic Evaluation**
+
+What it does:
+
+For Task A1:
+
+Checks whether both required words still appear in the generated joke.
+
+Counts how many jokes exceed the 40-word limit.
+
+For Task A2:
+
+Checks whether the joke ≤ 30 words.
+
+Computes a simple similarity measure between the headline and the joke (e.g., word overlap).
+
+For Tasks B1/B2:
+
+Checks word length.
+
+Ensures non-empty outputs.
+
+Why this is useful:
+
+The script doesn’t “judge” whether the joke is funny (that’s subjective), but it does verify:
+
+whether your system respects task rules,
+
+how robust the generation is (e.g., constraint satisfaction rate
+
+
+**config.py — Central Configuration**
+
+Typically stores:
+
+OPENAI_MODEL name for text-only tasks.
+
+TEMPERATURE, MAX_TOKENS, and other generation parameters.
+
+You can tweak this file to experiment without touching all the pipelines.
+
+Why this is good practice:
+
+Easier to tune parameters from one location.
+
+Makes the code cleaner and avoids magic numbers scattered everywhere.
+
+
+**requirements.txt**
+
+Contains minimal dependencies, for example:
+
+requests for HTTP API calls.
+
+tqdm for progress bars (if used).
+
+Designed to be lightweight and Colab-friendly.
+
+
+**Outputs — Generated Systems’ Answers**
+
+These files are generated by the pipelines and are in SemEval submission format.
+
+task-a-en.tsv, task-a-es.tsv, task-a-zh.tsv
+
+Columns:
+
+id – copied from the input file.
+
+text – the generated joke/comment for that id.
+
+They are the official outputs for Task A in each language.
+
+task-b1.tsv
+
+Columns:
+
+id – copied from task-b1-input.tsv.
+
+text – humorous caption based only on the GIF.
+
+task-b2.tsv
+
+Columns:
+
+id – copied from task-b2-input.tsv.
+
+text – humorous caption that connects the GIF and the textual prompt.
+
+
+**3. Tasks Brief Explanations**
+**3.1 Task A1 — Two-Word Humor**
+
+Input: two words that may or may not be semantically related.
+
+Model’s job:
+
+Compose a joke that uses both words naturally.
+
+Respect length (≤ 40 words).
+
+Make sense (no random word salad).
+
+This task is a good test of the model’s associative creativity: can it connect “unicorn” and “deadline” or “avocado” and “spaceship” into something that sounds like a joke someone might actually say?
+
+
+**3.2 Task A2 — Headline-Based Humor**
+
+Input: a news-like headline.
+
+Model’s job:
+
+Understand the scenario.
+
+Imagine how a comedian would react to it.
+
+Generate a short punchline/comment.
+
+This is closer to late-night monologue jokes, where comedians riff on current events. The difficulty is in staying close to the headline content but adding a twist.
+
+
+
+**3.3 Task B1 — GIF-Only Humor**
+
+Input: GIF URL.
+
+Model’s job:
+
+“Watch” the GIF using GPT-4o’s vision capabilities.
+
+Detect the basic action or situation (e.g., cat fails a jump, dog spins in a chair).
+
+Write a caption that a human might post on social media.
+
+This checks the ability of the model to combine visual recognition with humorous language.
+
+
+
+**3.4 Task B2 — GIF + Text Humor**
+
+Input: GIF URL + short text prompt/headline.
+
+Model’s job:
+
+Understand both the GIF and the text.
+
+Connect them logically in a humorous way.
+
+Keep the answer short and safe.
+
+This is the most complex because the model has to align two different modalities and invent a joke that feels coherent.
+
+
+
+**4. How to Run the Entire Project in Google Colab**
+
+**Step 1 — Clone the Repository**
+
+**!git clone https://github.com/kusa1379/semeval26-humor-gen.git**
+
+This command downloads a complete copy of GitHub project into Colab’s temporary filesystem.
+
+After cloning, you will have a folder named semeval26-humor-gen/ that contains: all source code, input data files, the pipelines, and outputs under parent directory.
+
+**Step 2 — Install Dependencies**
+
+**!pip install -r semeval26-humor-gen/requirements.txt**
+
+This reads the requirements.txt file inside your repo. It installs only the minimal packages needed: requests (for API calls) and any other helper libraries.
+
+
+**Step 3 — Set Your OpenAI API Key**
+
+**import os
+  os.environ["OPENAI_API_KEY"] = "sk-..."** (# your API Key)
+
+The humor pipelines need access to GPT-4o / GPT-4o-mini models. The API key is stored in the environment variable OPENAI_API_KEY. All the generator scripts read this variable.
+
+
+**Step 4 — Move Into the Project Folder**
+
+**%cd semeval26-humor-gen**
+
+
+**Step 5 — Run Task A (All Languages, A1 + A2)**
+
+**!python -m src.task_a_tsv_pipeline**
+
+Executes the main pipeline for Task A. It automatically: Loads input TSV files for English, Spanish, and Chinese Detects whether each row is A1 or A2 alls the appropriate joke generator (A1 or A2). Generates humor in the correct language and Validates required words, word limits, and safety
+
+Writes three output files:
+
+semeval26-humor-gen/task-a-en.tsv
+
+semeval26-humor-gen/task-a-es.tsv
+
+semeval26-humor-gen/task-a-zh.tsv
+
+
+**Step 6 — Run Task B1 (GIF-Only Humor)**
+
+**!python -m src.pipeline_b1**
+
+-Reads each row in task-b1-input.tsv.
+
+-Sends the GIF URL to GPT-4o.
+
+-Generates a funny caption based purely on the GIF.
+
+-Saves results to semeval26-humor-gen/task-b1.tsv.
+
+
+**Step 7 — Run Task B2 (GIF + Text Humor)**
+
+**!python -m src.pipeline_b2**
+
+-Reads GIF + prompt pairs from task-b2-input.tsv.
+
+-Sends both the GIF and the text prompt to GPT-4o.
+
+-Generates a multimodal joke that ties both inputs together.
+
+-Saves results to semeval26-humor-gen/task-b2.tsv.
+
+
+**After Running Everything**
+
+You will find your final submission files in:
+
+**/content/semeval26-humor-gen/**
+
